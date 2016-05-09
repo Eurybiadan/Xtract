@@ -1,0 +1,6 @@
+# Ignore these file types #
+###########################
+
+*.db
+*.asv
+*.m~
