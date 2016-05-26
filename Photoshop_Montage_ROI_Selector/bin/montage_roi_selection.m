@@ -310,17 +310,27 @@ uiwait(toolhandle);
                                            eccent_loc(i,:), ...
                                            param.eye, '2term');
                  end
-                                         
                  
-                 roitext(i)= text( bounds(2,1) + 10, bounds(2,2)-50, tag, 'Color',[1 0 0]);
+                 if isfield(param.gen,'roi_ind')
+                     roinum = num2str(param.gen.roi_ind(i));
+                 else
+                     roinum = num2str(i);
+                 end
+%                  tag
+%                  i*2-1
+%                  i*2
+                 roitext(i*2-1) = text( bounds(2,1), bounds(2,2)-50, tag, 'Color',[1 0 0]); 
+                 roitext(i*2)   = text( (bounds(3,1)+bounds(1,1))/2, (bounds(3,2)+bounds(1,2))/2, roinum,...
+                                        'HitTest','on', 'Color',[1 0 0],'HorizontalAlignment', 'center');
                  
                  roihand(i)= patch( bounds(:,1), bounds(:,2),...
                                      'w','EdgeColor',[1 0 0],'Parent',get(toolhandle,'CurrentAxes'),'HitTest','on',...
                                      'Tag',tag,'CDataMapping','direct','AlphaDataMapping','direct','FaceColor',[.1 .1 .1],'FaceAlpha',0.01,...
-                                     'UserData',roitext(i));
-                
-                repaint();
+                                     'UserData',[roitext(i*2-1) roitext(i*2)]);
+                %Backwardly associate the text with the handle
+                set(roitext(i*2),'UserData',roihand);
         end
+        repaint();
     end
 
 
@@ -334,7 +344,7 @@ uiwait(toolhandle);
 
         roiX = get(roihand,'XData');
         roiY = get(roihand,'YData');
-        roiNames = get(roihand,'Tag');
+        roiNames = get(roihand,'UserData');
         
         roiCellX = roiX;
         roiCellY = roiY;
@@ -435,9 +445,7 @@ uiwait(toolhandle);
 
                 % Determine the layer indexes that the roi falls within
                 roiinlayer = find(roicontainedbound(:,j) == 1);
-                
-                
-                
+
                 if strcmp(deblank(param.gen.locunits), 'degrees')
                     scaleunit = char(176);
                     scale = param.pixperdeg;
@@ -453,12 +461,13 @@ uiwait(toolhandle);
 
                   tmp = usedlayer(roiinlayer);
                   layerprefix{j} = {tmp{selectionid}};
+                  layerid{j} = get(roiNamesBound{j}(2),'String');
                 
             end
         end
         disp('Finished.');
         
-        roiout = [loc' layerprefix' cutout'];
+        roiout = [loc' layerprefix' cutout' layerid'];
         saveandquit(roiout)
         
     end
@@ -555,8 +564,8 @@ uiwait(toolhandle);
                     end
 
                     for j=1:size(roiout{i,3},1) % Loop through the (possible) multiple selections in an roi.
-                        fprintf(fid,'%s,%s,%s\n',roiout{i,2}{j}, horz_loc, vert_loc );
-                        imwrite(roiout{i,3}{j}, fullfile(savePath, [roiout{i,2}{j} '_' combined_loc '.tif']))
+                        fprintf(fid,'%s,%s,%s,%s\n', roiout{i,2}{j}, horz_loc, vert_loc, roiout{i,4} );
+                        imwrite(roiout{i,3}{j}, fullfile(savePath, [roiout{i,2}{j} '_' combined_loc '_' num2str(i) '.tif']))
                     end
                 end
             end
@@ -653,14 +662,23 @@ uiwait(toolhandle);
                     center = [cp(1,1) cp(1,2)];
                     selected_rect = gco;
 
-                    if strcmp(get(selected_rect,'Type'),'patch')                                                
+                    if strcmp(get(selected_rect,'Type'),'patch') || strcmp(get(selected_rect,'Type'),'text')   
                                 
                         % Allow movement of patches
-                        rect_text = get(selected_rect,'UserData');
+                        if( strcmp(get(selected_rect,'Type'),'patch') )
+                            rect_text = get(selected_rect,'UserData');
+                        elseif strcmp(get(selected_rect,'Type'),'text')
+                            %If it's text, then we need to get the patch
+                            %first.
+                            selected_rect = get(selected_rect,'UserData');
+                            rect_text = get(selected_rect,'UserData');
+                        end
+                        
 
                         if str2num(ver(1:4)) <= 2014 && strcmp(ver(end), 'a')
                             set(selected_rect,'EraseMode','xor');
-                            set(rect_text,'EraseMode','xor');
+                            set(rect_text(1),'EraseMode','xor');
+                            set(rect_text(2),'EraseMode','xor');
                         end
                         
                         % Calculate the expected size at this eccentricity
@@ -690,9 +708,13 @@ uiwait(toolhandle);
                                                    [xbounds(1)+roihalfsize-eccent_center(1) ybounds(1)+roihalfsize-eccent_center(2)], ...
                                                    param.eye, '2term');
                         end
+                        
+                        
+                        
                         set(selected_rect,'XData',[xbounds'],'YData',[ybounds']);
-                        set(rect_text,'Position',[xbounds(2)-10 ybounds(2)-100]);
-                        set(rect_text,'String',tag);
+                        set(rect_text(1),'Position',[xbounds(2) ybounds(2)-50]);
+                        set(rect_text(1),'String',tag);
+                        set(rect_text(2),'Position',[center(1) center(2)]);
                        
                    
                         drawnow expose; 
@@ -746,13 +768,15 @@ uiwait(toolhandle);
                                                param.eye, '2term');
                      end                   
                                        
-                                       
-                    texthand = text( bounds(2,1) + 10, bounds(2,2)-50, tag, 'Color',[1 0 0]);
-                    roitext = [roitext; texthand];
+                    roinum = num2str(str2double(get(roitext(end),'String'))+1);
+                    texthand = text( bounds(2,1), bounds(2,2)-50, tag, 'Color',[1 0 0]);
+                    indhand  = text( (bounds(3,1)+bounds(1,1))/2, (bounds(3,2)+bounds(1,2))/2, roinum, 'Color',[1 0 0],'HorizontalAlignment', 'center');
+ 
+                    roitext = [roitext; texthand; indhand];
                     patchhand = patch( bounds(:,1), bounds(:,2),...
                                          'w','EdgeColor',[1 0 0],'Parent',get(toolhandle,'CurrentAxes'),'HitTest','on',...
                                          'Tag',tag,'CDataMapping','direct','AlphaDataMapping','direct','FaceColor',[.1 .1 .1],'FaceAlpha',0.01,...
-                                         'UserData',roitext(end));
+                                         'UserData',[roitext(end-1) roitext(end)]);
                     roihand = [roihand; patchhand];
                     
                     repaint();
@@ -760,18 +784,27 @@ uiwait(toolhandle);
                     
                     selected_rect = gco;
 
-                    if strcmp(get(selected_rect,'Type'),'patch')  
-                       
-                        rect_text = get(selected_rect,'UserData');
-                        
+                    if strcmp(get(selected_rect,'Type'),'patch') || strcmp(get(selected_rect,'Type'),'text')   
+                                
+                        % Allow movement of patches
+                        if( strcmp(get(selected_rect,'Type'),'patch') )
+                            rect_text = get(selected_rect,'UserData');
+                        elseif strcmp(get(selected_rect,'Type'),'text')
+                            %If it's text, then we need to get the patch
+                            %first.
+                            selected_rect = get(selected_rect,'UserData');
+                            rect_text = get(selected_rect,'UserData');
+                        end 
+
                         rectind = find(roihand == selected_rect);
-                        textind = find(roitext == rect_text);
+                        tagind = find(roitext == rect_text(1));
                         
                         roihand = roihand([1:rectind-1 rectind+1:end]);
-                        roitext = roitext([1:textind-1 textind+1:end]);
+                        roitext = roitext([1:tagind-1 tagind+2:end]);
                         
                         delete(selected_rect)
-                        delete(rect_text)
+                        delete(rect_text(1))
+                        delete(rect_text(2))
                     end
             end
         end
@@ -779,7 +812,9 @@ uiwait(toolhandle);
             
             if str2num(ver(1:4)) <= 2014 && strcmp(ver(end), 'a')
                 set(selected_rect,'EraseMode','normal');
-                set(get(selected_rect,'UserData'),'EraseMode','normal');
+                roitext = get(selected_rect,'UserData');
+                set(roitext(1),'EraseMode','normal');
+                set(roitext(2),'EraseMode','normal');
             end
         end
         end
@@ -822,8 +857,9 @@ uiwait(toolhandle);
                 delete(roitext);
                 roihand  = roinew;
                 roitext  = roinewtag;
-                for x=1:length(roitext)
-                    set(roihand(x),'UserData',flipud(roitext(x)))
+                for x=1:length(roihand)
+                    set(roihand(x),'UserData',[roitext(x*2-1) roitext(x*2)])
+                    set(roitext(x*2),'UserData',roihand(x));
                 end
             
         end

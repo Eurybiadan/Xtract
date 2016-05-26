@@ -238,7 +238,17 @@ switch (handles.param.gen.type)
     case 'Import'        
         if isfield(handles,'locfile')
             [handles.importgen.locations, units] = extract_roi_locations( handles.locfile(2:3), handles.param.eye );
-
+            
+            if size(handles.locfile,2) == 4
+                if all(handles.locfile{4} ~= 0)
+                    handles.importgen.roi_ind = handles.locfile{4};
+                else
+                    handles.importgen.roi_ind = 1:length(handles.importgen.locations);
+                end
+            else
+                handles.importgen.roi_ind = 1:length(handles.importgen.locations);
+            end
+            
             if strcmp(units,'deg')
                 handles.importgen.locunits = 'degrees';
             elseif strcmp(units,'um')
@@ -1034,9 +1044,16 @@ function browseimports_Callback(hObject, eventdata, handles)
 
 fid = fopen(fullfile(pathname,fname),'r');
 
-handles.locfile = textscan(fid,'%s%s%s','Delimiter',',');
+handles.locfile = textscan(fid,'%s%s%s%d','Delimiter',',');
 
 fclose(fid);
+
+[tmp, repeatinds]=unique(handles.locfile{4});
+
+handles.locfile{1}=handles.locfile{1}(repeatinds);
+handles.locfile{2}=handles.locfile{2}(repeatinds);
+handles.locfile{3}=handles.locfile{3}(repeatinds);
+handles.locfile{4}=handles.locfile{4}(repeatinds);
 
 set(handles.roilocs,'Data', [handles.locfile{2} handles.locfile{3}] );
 

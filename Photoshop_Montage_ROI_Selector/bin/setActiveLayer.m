@@ -122,7 +122,7 @@ function [ ] = setActiveLayer( name )
 '        return executeActionGet(ref).getString(charIDToTypeID( "Nm  " ));   '...
 '    }; ' ];
 
-psjavascript(script)
+psjavascript(script);
 
 end
 

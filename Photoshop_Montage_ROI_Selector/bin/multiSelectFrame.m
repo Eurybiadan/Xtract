@@ -48,7 +48,7 @@ selectFrame = figure;
 set(selectFrame, 'HitTest','off');
 set(selectFrame, 'CloseRequestFcn',@xnext);
 set(selectFrame,'KeyPressFcn',@keypress);
-set(selectFrame, 'Name', ['Selecting best layer for ROI location: ' roititle] );
+set(selectFrame, 'Name', ['Selecting best layer for ROI location ' get(roititle(2),'String') ': ' get(roititle(1),'String')] );
 
 
 % Pick the dimensions based on the number of images-
