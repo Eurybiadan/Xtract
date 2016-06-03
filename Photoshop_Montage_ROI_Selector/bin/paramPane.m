@@ -1044,7 +1044,7 @@ function browseimports_Callback(hObject, eventdata, handles)
 
 fid = fopen(fullfile(pathname,fname),'r');
 
-handles.locfile = textscan(fid,'%s%s%s%d','Delimiter',',');
+handles.locfile = textscan(fid,'%s%s%s%d','Delimiter',',','EmptyValue',0);
 
 fclose(fid);
 

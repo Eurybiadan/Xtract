@@ -2,7 +2,7 @@
 %     This software allows a user to extract regions of interest from a
 %     montage created in Photoshop CS5.1 or greater, and in MATLAB 2012a
 %     and greater.
-%
+% 
 %     Copyright (C) 2014  Robert F Cooper
 % 
 %     This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 %          http://www.mathworks.com/support/compilers/R2012a/win64.html )
 %          I use Windows SDK 7.1 because it is freely downloadable and easy
 %          to install.
-%
+% 
 %       3) The MATLAB/Photoshop plugin correctly installed and MATLAB
 %          linked. CS5/5.1 has the plugin included in the Extended edition
 %          installation, but CS6 does not. You can download the CS6 plugin
