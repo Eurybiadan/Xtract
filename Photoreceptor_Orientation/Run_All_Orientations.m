@@ -5,13 +5,13 @@ pathname = pwd;
 [fNames] = read_folder_contents(pathname,'csv');
 
 % Load the scaling file
-[tmp, lutData] = load_scaling_file('R:\Rob Cooper\Cell_Orientation_2015\LUT.csv');
+[tmp, lutData] = load_scaling_file('/AOSLO_Repo1/Personnel/Rob_Cooper/Orientation_Data/ROIs/LUT.csv');
 % [tmp, lutData] = load_scaling_file('M:\Documents\Grad school\Cell_Orientation_2015\LUT.csv');
 % [tmp, lutData] = load_scaling_file('/remote_project_folders/Rob Cooper/Cell_Orientation_2015/LUT.csv');
 
 numnames = length(fNames);
 for n=1:numnames
-    n=7
+    
     fname = fNames{n}
     imname = [fname(1:end-11) '.tif'];
     % Read in the image, if it exists.
@@ -156,7 +156,7 @@ for n=1:numnames
 
 %% General display
     figure(1); imagesc(im); colormap gray; axis image; hold on;
-    plot(unmatchcoords(:,1), unmatchcoords(:,2), 'wo');
+%     plot(unmatchcoords(:,1), unmatchcoords(:,2), 'wo');
     
     for ii=1: length(rfc)
 
@@ -188,9 +188,9 @@ for n=1:numnames
         
         plot(x, y,'w.');        
 
-        if ii ==44
-           disp('44'); 
-        end
+%         if ii ==44
+%            disp('44'); 
+%         end
         
         if all( someagree(ii,:) )
            plot(agreerotx,agreeroty,'y');  
@@ -285,19 +285,19 @@ for n=1:numnames
         
     end
     
-    out = input(['Write this? (Percent agreement: ' num2str(agreepercent(n)*100) ' ) ']);
+%     out = input(['Write this? (Percent agreement: ' num2str(agreepercent(n)*100) ' ) ']);
 %     out = input('Write this? ');
-    if out == 1        
+%     if out == 1        
 %         figure(1);
 %         saveas(gcf, [fname(1:end-4) '_radon.eps'],'epsc');
 %         figure(2);
 %         saveas(gcf, [fname(1:end-4) '_pum.eps'],'epsc');
 %         figure(3);
 %         saveas(gcf, [fname(1:end-4) '_fourier.eps'],'epsc');
-        figure(1);
-        saveas(gcf, [fname(1:end-4) '_agreement.eps'],'epsc');
-        imwrite(im, [fname(1:end-4) '.tif']);
-    end
+%         figure(1);
+%         saveas(gcf, [fname(1:end-4) '_agreement.eps'],'epsc');
+%         imwrite(im, [fname(1:end-4) '.tif']);
+%     end
     
     %%
     pause(0.01);
