@@ -40,7 +40,6 @@ Y = Y-pixelboxhalf;
 mask = uint8(X.^2 + Y.^2 < pixelboxhalf.^2);
 
 
-% figure(33); voronoi( coords(:,1), coords(:,2) ); axis image;
 [V,C] = voronoin(coords,{'QJ'});
 
 % Determine the number of sides for each coordinate location
@@ -84,12 +83,6 @@ for i=1:size(coords,1)
         
         radonim = radon(roi,range{i})';
 
-%         if numedges(i) == 7 || numedges(i) == 5
-%             figure(1);
-%             imagesc(radonim); colormap gray; axis image;
-%             pause;
-%         end
-
         clear numpeaks;
         
         % Determine the cutoffs for the radon xform by looking for the FWHM
@@ -108,10 +101,6 @@ for i=1:size(coords,1)
             
             
             radonrow = conv(radonrow,gausfilt,'valid');
-          
-%             xings = 1:length(radonrow);
-%             xings = xings(radonrow > (max(radonrow)/2) );
-            
             radonrow = radonrow( (xings(1)):(xings(end)));
             dervline =  ( diff( radonrow,2) ); %, 4 );
             

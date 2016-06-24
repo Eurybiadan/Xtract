@@ -3,10 +3,6 @@ function [statistics] = radon_orientation_analysis(im, coords, um_per_pix)
 % Calculate the cell distances
 mean_nn_dist=calc_icd(coords,um_per_pix);
 
-% figure(33); imagesc(im); colormap gray; axis image;
-% recth = rectangle('Position',[0 0 1 1], 'EdgeColor','r');
-
-% micronboxsize = 12;
 micronboxsize = mean_nn_dist.*4.5;
 
 pixelboxsize = ceil(micronboxsize./um_per_pix);
@@ -24,8 +20,23 @@ Y = Y-pixelboxhalf;
 
 mask = uint8(X.^2 + Y.^2 < pixelboxhalf.^2);
 
-i=1;
-j=1;
+[V,C] = voronoin(coords,{'QJ'});
+
+% Determine the number of sides for each coordinate location
+for i=1:length(C)
+   
+    vertices=V(C{i},:);
+    
+
+    if (all(C{i}~=1)  && all( vertices(:,1)<=max(coords(:,1))) && all(vertices(:,2)<=max(coords(:,2)) ) ... % Second row are the Column limits
+                      && all( vertices(:,1)>=min(coords(:,1))) && all(vertices(:,2)>=min(coords(:,2)) ) )
+
+        numedges(i)=size(V(C{i},1),1);
+
+    end
+ 
+end
+
 alist=-100*ones(size(coords,1),1);
 for i=1:size(coords,1)
         
@@ -33,15 +44,20 @@ for i=1:size(coords,1)
     y = round(coords(i,2));
     
     if (y-pixelboxhalf) > 0           && (x-pixelboxhalf) > 0 && ...
-       (y+pixelboxhalf) <= size(im,1) && (x+pixelboxhalf) <= size(im,2)
+       (y+pixelboxhalf) <= size(im,1) && (x+pixelboxhalf) <= size(im,2) ...
+       && numedges(i)~=0
        
         roi = im( y-pixelboxhalf : y+pixelboxhalf, ...
                   x-pixelboxhalf : x+pixelboxhalf);
-           
+
+       
         roi = roi.*mask;
         outroi = double(roi.*mask);
 
-        radonim = radon(roi,60:120)';
+        expected_angle(i) = (180*(numedges(i)-2))/numedges(i);
+        range{i} = (90 - (expected_angle(i)/4)) : (90 + (expected_angle(i)/4));
+        
+        radonim = radon(roi,range{i})';
 
         clear numpeaks;
         
@@ -60,123 +76,84 @@ for i=1:size(coords,1)
             
             
             radonrow = conv(radonrow,gausfilt,'valid');
-
             radonrow = radonrow( (xings(1)):(xings(end)));
-            dervline =  ( diff( radonrow,2) ); %, 4 );
+            dervline =  ( diff( radonrow,2) ); 
             
             rrms(r) = rms( dervline );
+
         end 
         
         rrms= rrms';
+
                   
         [rmsval angle] = max(rrms);
         [val worstangle] = min(rrms);
         
-        theta = (angle-31);
-
+        theta = (angle - (1+(expected_angle(i)/4)) );
 
         alist(i) = theta;
         arms(i) = rmsval;
-%         disp(['Found angles were: RMS:' num2str(val) ' Angle: ' num2str(61-angle)] );
-%         disp(['Found angles were: RMS:' num2str(61-angle) ' and GAUS: ' num2str(61-topind)] );
-
     end
 end
 
+imsize = size(im);
 
+patchsize = pixelboxsize;
+patchwidths = 0:patchsize:imsize;
+
+kk=1;
+for ii=1:(length(patchwidths)-1)
+beginpatchy = patchwidths(ii);
+endpatchy   = ceil(patchwidths(ii+1));
+
+    for jj=1:(length(patchwidths)-1)
+        beginpatchx = patchwidths(jj);
+        endpatchx   = ceil(patchwidths(jj+1));
+
+
+        [patchcoords{kk} patches{kk}] = coordclipv2(coords, [beginpatchx endpatchx], [beginpatchy endpatchy]);
+        kk=kk+1;
+    end
+end
+
+for ii=1:length(patches)
+    opatches{ii} = alist(patches{ii});
+    bad_angles = opatches{ii} ~= -100;
     
-% figure(1); imagesc(im); axis image; colormap gray;
-figure(30); imagesc(im); colormap gray; axis image; hold on;
+    opatches{ii} = opatches{ii}(bad_angles);
+    opatch_exp_angle{ii} = expected_angle(patches{ii});
+    opatch_exp_angle{ii} = opatch_exp_angle{ii}(bad_angles);
+end
 
-[V,C] = voronoin(coords,{'QJ'});
+variation=[];
+weight=[];
+for i=1:length(opatches) 
+    current_patch = opatches{i};
+    current_exp_angle = opatch_exp_angle{i}';
+    if length( current_patch ) > 4
+        current_patch = current_patch(current_patch ~=-100);
+        % Phase unwrap because we're doing std dev and need direct
+        % distances
+        [maxdiff maxind] = max(current_patch);
 
-green=0;
-blue=0;
+        alldists = pdist2(current_patch, current_patch(maxind));
 
-%% Color the voronoi cells based on the above values
-for i=1:length(C)
-   
-    vertices=V(C{i},:);
-    numedges=size(V(C{i},1),1);
-    
-if (all(C{i}~=1)  && all( vertices(:,1)<=max(coords(:,1))) && all(vertices(:,2)<=max(coords(:,2)) ) ... % Second row are the Column limits
-                  && all( vertices(:,1)>=min(coords(:,1))) && all(vertices(:,2)>=min(coords(:,2)) ) )
-        
- 
-        if ((alist(i) >=-30) && (alist(i) < -25))
-%             if alist(i) == -30 
-%                 alist(i) = -100;
-%                 color = 'k';
-%             else
-%              
-                color = 'b';
-%             end
-        elseif (alist(i) >= -25) && (alist(i) < -15)
-            color = 'c';
-        elseif (alist(i) >=-15) && (alist(i) < -5)
-            color = 'g';
-            green = green+1;
-        elseif (alist(i) >=-5) && (alist(i) <= 5)
-            color = 'y';
-        elseif (alist(i) >5) && (alist(i) <= 15)
-            color = 'm';
-        elseif ((alist(i) >15) && (alist(i) <= 25)) 
-            color = 'r';
-        elseif  ((alist(i) >25) && (alist(i) <= 30))
-            color = 'b';
-        else
-%             alist(i) = -100;
-            color = 'k';
-        end 
-        
-        if (numedges == 6)            
-            patch(V(C{i},1), V(C{i},2), ones(size(V(C{i},1))),'FaceColor',color );
-        else
-            alist(i) = -100;
-            patch(V(C{i},1), V(C{i},2), ones(size(V(C{i},1))),'FaceColor','k' );
+        wrapping = abs( alldists ) > (current_exp_angle/4);
+        if any( wrapping )
+            current_patch( wrapping ) = current_patch( wrapping ) + current_exp_angle(wrapping)/2;
+            current_patch( ~wrapping ) = current_patch( ~wrapping ) + alldists( ~wrapping ).*2;
         end
-else
-    alist(i) = -100;
+        
+        variation = [variation var(current_patch)];
+        weight = [weight length(current_patch)];
+    end
 end
- 
+
+top=0;
+bottom=0;
+for i=1:length(variation)
+     top = top + ((weight(i)-1) * variation(i));
+     bottom = bottom + weight(i);
 end
-axis image;
-title('Radon Orientation Map')
-hold off;
 
-figure(31); bar(-30.5:1:30.5,histc(alist(alist~=-100), -30.5:1:30.5) ,'histc');
-
-statistics.radon_angles = mean(alist(alist~=-100) );
-
-%% Determine the orientation autocorrelation
-% triangulation = delaunayTriangulation(coords);
-% alistautocorr=[];
-% for i=1:length(triangulation.Points)
-% 
-%     neigh = cell2mat( vertexAttachments(triangulation,i) );
-%     
-%     if size(neigh,2) == 6
-%         
-%         neighind = unique(triangulation(neigh,:));
-%         connected_vertices  =coords( neighind,: );
-%             
-%         for v=1:length(connected_vertices)
-%             if( (connected_vertices(v,1) == triangulation.Points(i,1) ) && ...
-%                 (connected_vertices(v,2) == triangulation.Points(i,2)) )
-% 
-% %                 center = connected_vertices(v,:);
-%                 centerind = neighind(v);
-% %                 connected_vertices = [connected_vertices(1:v-1,:); connected_vertices(v+1:end,:)];
-%                 connected_ind = [neighind(1:v-1,:); neighind(v+1:end,:)];
-%                 break;
-%             end
-%         end
-%         
-%         if alist(centerind) ~= -100
-%             conn_orient = alist(connected_ind);
-%             conn_orient = conn_orient(conn_orient ~=-100);
-%             alistautocorr = [alistautocorr; mean(alist(centerind)-conn_orient)];
-%         end
-%     end    
-% end
-% figure(32); bar(-30:1:30,histc(alistautocorr, -30:1:30)./length(alistautocorr) ,'histc');
+statistics.Orientation_Pooled_Variance = top/bottom;

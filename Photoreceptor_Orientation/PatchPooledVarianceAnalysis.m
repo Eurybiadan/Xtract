@@ -122,8 +122,6 @@ for n=1:numnames
 
         if length(rfcvariation) > 0
             rfcavgvar = [rfcavgvar; top/bottom];
-%             rfcpatchratio = [rfcpatchratio; rfcnumsmall/length(rfc_opatches{n})];
-%             rfcnumpatches = rfcnumpatches+length(rfc_opatches{n});
         end
         
         top=0;
