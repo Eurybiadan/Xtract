@@ -1,5 +1,7 @@
 # Eques
-This is a repository for a variety of adaptive optics tools. I don't mind if you use the tools contained in this package, however I do ask that you credit me if you *do* use any of the tools. 
+This is a repository for a variety of adaptive optics tools. I don't mind if you use the tools contained in this package, however I do ask that you credit me if you *do* use any of the tools.
+
+The "Montage Seeder" has been rendered mostly useless by Chen et al.'s work: M. Chen, R. F. Cooper, G. K. Han, J. Gee, D. H. Brainard, and J. I. W. Morgan, "Multi-modal automatic montaging of adaptive optics retinal images," Biomedical Optics Express, Vol. 7 (12), pp. 4899-4918, 2016. The repository to our implementation is here: https://github.com/BrainardLab/AOAutomontaging
 
 Photoshop Montage ROI Selector and ROI Seeders:
 
